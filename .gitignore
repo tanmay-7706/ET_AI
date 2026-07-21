@@ -43,3 +43,5 @@ next-env.d.ts
 # Ignore all markdown prompt files but keep README
 *.md
 !README.md
+convex/_generated/
+scratch/

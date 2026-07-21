@@ -3,10 +3,12 @@ import { callOpenRouter, ROUTING } from "@/lib/openrouter";
 import { embedText } from "@/lib/embeddings";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 interface ShieldRequest {
   message: string;
   conversationHistory: { role: "user" | "assistant"; content: string }[];
+  language?: "en" | "hi";
 }
 
 interface ShieldResponse {
@@ -16,10 +18,37 @@ interface ShieldResponse {
   citedAdvisories: { sourceTitle: string; sourceType: string }[];
 }
 
+/**
+ * Extract the client IP from Next.js request headers.
+ * Falls back to "anonymous" if no IP header is available.
+ */
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "anonymous"
+  );
+}
+
 export async function POST(req: NextRequest) {
   try {
+    // ── Rate limit check (fail fast, before any expensive work) ──
+    const clientIp = getClientIp(req);
+    const rateLimitResult = await checkRateLimit(clientIp);
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: "rate_limited",
+          message: "Please wait a moment before sending another message.",
+        },
+        { status: 429 }
+      );
+    }
+
     const body = (await req.json()) as ShieldRequest;
     const { message, conversationHistory } = body;
+    const language = body.language || "en";
 
     if (!message || typeof message !== "string") {
       return NextResponse.json(
@@ -54,6 +83,12 @@ export async function POST(req: NextRequest) {
           .join("\n\n")
       : "No specific advisories found. Use general fraud awareness knowledge.";
 
+    // Language-specific instruction for Hindi responses
+    const languageInstruction =
+      language === "hi"
+        ? `\n\nLANGUAGE INSTRUCTION: You MUST write the "reply" field in Hindi (Devanagari script). The citizen is reading in Hindi. However, keep "verdict" values in English exactly as specified above, and keep "citedAdvisories" source titles in English — only the "reply" text should be in Hindi.`
+        : "";
+
     const systemPrompt = `You are the Citizen Fraud Shield — an AI assistant that helps Indian citizens identify scams and protect themselves from fraud.
 
 IMPORTANT RULES:
@@ -71,7 +106,7 @@ You MUST respond with a JSON object containing exactly these fields:
   "verdict": "likely-safe" | "suspicious" | "likely-scam" | "need-more-information",
   "confidence": 0.0 to 1.0,
   "citedAdvisories": [{"sourceTitle": "...", "sourceType": "..."}]
-}`;
+}${languageInstruction}`;
 
     const chatMessages = [
       { role: "system" as const, content: systemPrompt },
@@ -87,9 +122,13 @@ You MUST respond with a JSON object containing exactly these fields:
 
     if (!rawResponse) {
       // Graceful fallback when the model is unavailable
+      const fallbackReply =
+        language === "hi"
+          ? "मैं अभी आपकी क्वेरी का विश्लेषण करने में असमर्थ हूँ। यदि आपको लगता है कि आप किसी धोखाधड़ी का शिकार हो रहे हैं, तो कृपया तुरंत राष्ट्रीय साइबर अपराध हेल्पलाइन 1930 पर कॉल करें।"
+          : "I'm temporarily unable to analyze your query. If you believe you're being targeted by a scam, please call the national cybercrime helpline immediately at 1930.";
+
       return NextResponse.json<ShieldResponse>({
-        reply:
-          "I'm temporarily unable to analyze your query. If you believe you're being targeted by a scam, please call the national cybercrime helpline immediately at 1930.",
+        reply: fallbackReply,
         verdict: "need-more-information",
         confidence: 0,
         citedAdvisories: [],

@@ -1,139 +1,131 @@
-# Digital Safety Shield
+# Digital Public Safety Shield
 
-AI-powered platform that detects digital-arrest scam sessions in progress and maps a shared fraud entity graph linking scam networks to counterfeit currency circulation.
+*Live scam interception and fraud convergence mapping for a safer digital India.*
 
-## Stack
+<!-- TODO: add demo GIF/screenshot here after recording -->
 
-- **Frontend**: Next.js 15 (App Router, TypeScript)
-- **Styling**: Tailwind CSS
-- **Backend**: Convex (real-time database + schema validation)
-- **Auth**: Clerk (role-based: `officer` + `citizen`)
-- **Orchestration**: Inngest (event-driven, durable workflows)
+## Problem Statement
+
+This prototype was built for the **ET AI Hackathon 2026** under **Problem Statement 6: AI for Digital Public Safety**. It specifically targets the alarming rise in "digital arrest" scams and their unexpected convergence with counterfeit currency circulation networks.
+
+## What Makes This Different
+
+- **Live Session Interception:** Instead of post-hoc detection, the system continuously analyzes active call/text streams in real-time, intercepting threats before financial damage occurs.
+- **Shared Entity Graph:** A force-directed knowledge graph maps relationships between flagged entities, connecting organized scam networks directly to counterfeit currency circulation hubs.
+- **RAG-Grounded Citizen Answers:** The public-facing "Citizen Shield" chatbot grounds its responses in real regulatory advisories (RBI, MHA, NCRB), providing users with transparent citations and reliable guidance.
+- **Auto-Generated Evidence Packages:** Court-admissible style dossiers are assembled automatically, linking related sessions and entities into chronological, source-cited timelines available as PDF exports.
+
+## Architecture
+
+The platform operates across four primary layers: 
+1. **Client Surfaces:** A Next.js frontend split into an authenticated Command Center for officers and a public-facing Citizen Shield.
+2. **Inngest Event Orchestration:** A robust background job system that coordinates multi-step agent workflows safely and reliably.
+3. **Convex Data/RAG Layer:** The realtime backend and vector database that powers live updates, graph storage, and semantic search for advisories.
+4. **External AI Providers:** Deep integrations with state-of-the-art models for specialized tasks (Gemini via Google AI Studio, multiple models via OpenRouter).
+
+### AI Agent Swarm
+- **Classifier Agent:** Analyzes raw session transcripts to detect threat vectors and assign risk scores.
+- **Graph Agent:** Traverses the database to discover hidden convergence edges between seemingly unrelated entities.
+- **Evidence Agent:** Compiles chronological dossiers from raw session and entity data.
+- **Alerts Agent:** Generates simulated multi-channel dispatch alerts for critical threats.
+- **Incident Pattern Agent:** Analyzes temporal and geographic data to identify broader trends.
+- **Counterfeit Vision Agent:** Analyzes images to detect forged currency signatures.
+
+## Tech Stack
+
+- **Frontend:** Next.js 15, Tailwind CSS
+- **Backend/Data:** Convex (Realtime Database & Vector Search), Inngest (Event Orchestration)
+- **Auth:** Clerk
+- **AI/ML:** OpenRouter, Gemini API
+- **Infra:** Upstash Redis (Sliding Window Rate Limiting)
+
+## Key Features
+
+- Live risk scoring with visible AI reasoning
+- Force-directed fraud network graph with a highlighted convergence edge
+- Live threat map plotting geographic hotspots
+- RAG-grounded citizen chat with regional language support (English & Hindi)
+- Exportable PDF evidence packages
+- Officer-only role-gated command center
+- Simulated multi-channel alert dispatch
+- Rate-limited public API endpoints
 
 ## Getting Started
 
-```bash
-# Install dependencies
-npm install
+### Prerequisites
+- Node.js (v18+)
+- npm
 
-# Set up environment variables
-cp .env.local.example .env.local  # Fill in Clerk + Convex keys
+### Installation
 
-# Start the dev server
-npm run dev
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/tanmay-7706/ET_AI.git
+   cd ET_AI
+   ```
 
-# In a separate terminal — start Convex
-npx convex dev
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-# In a separate terminal — start Inngest dev server
-npx inngest-cli@latest dev
-```
+3. **Environment Variables**
+   Create a `.env.local` file in the root directory and add the following keys (do not commit this file):
+   ```
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+   CLERK_SECRET_KEY=
+   NEXT_PUBLIC_CLERK_SIGN_IN_URL=
+   NEXT_PUBLIC_CLERK_SIGN_UP_URL=
+   NEXT_PUBLIC_CONVEX_URL=
+   NEXT_PUBLIC_CONVEX_SITE_URL=
+   GEMINI_API_KEY=
+   OPENROUTER_API_KEY=
+   UPSTASH_REDIS_REST_URL=
+   UPSTASH_REDIS_REST_TOKEN=
+   INNGEST_SIGNING_KEY=
+   INNGEST_EVENT_KEY=
+   ```
 
-## Schema Reference
+4. **Start the Convex backend**
+   ```bash
+   npx convex dev
+   ```
 
-### `scamSessions`
-Active and historical scam-call sessions. Each session tracks a live or recorded call transcript, a rolling risk score produced by the Scam Session Classifier agent, and a lifecycle status that drives command-center UI filtering.
+5. **Seed the database (Optional but recommended)**
+   ```bash
+   npx convex run setup:seedMockData
+   ```
 
-| Field | Type | Description |
-|---|---|---|
-| `sessionId` | `string` | Unique identifier for the scam session |
-| `transcriptChunks` | `array` | Ordered transcript segments `{ text, timestamp, speaker }` |
-| `riskScore` | `number` (0–100) | Rolling risk score from the classifier |
-| `status` | `enum` | `"monitoring"` \| `"flagged"` \| `"confirmed"` \| `"resolved"` |
-| `createdAt` | `number` | Epoch timestamp of session creation |
-| `updatedAt` | `number` | Epoch timestamp of last update |
-
-**Index**: `by_status` — filter sessions by lifecycle status.
-
----
-
-### `entities`
-Canonical nodes in the fraud-network graph. Every phone number, UPI ID, device fingerprint, bank account, currency-note serial, or person is deduplicated here with a risk weight.
-
-| Field | Type | Description |
-|---|---|---|
-| `entityId` | `string` | Unique identifier |
-| `type` | `enum` | `"phone"` \| `"upiId"` \| `"deviceFingerprint"` \| `"bankAccount"` \| `"currencyNoteSerial"` \| `"person"` |
-| `value` | `string` | The entity's actual value (phone number, UPI ID, etc.) |
-| `firstSeenAt` | `number` | When this entity was first observed |
-| `riskWeight` | `number` | Computed risk weight |
-
-**Indexes**: `by_entityId`, `by_type_value` — lookup by ID or dedup by type+value.
-
----
-
-### `graphEdges`
-Bidirectional relationships between entities. Each edge carries a typed relationship label and confidence score. The graph agent traverses these to detect convergence.
-
-| Field | Type | Description |
-|---|---|---|
-| `fromEntityId` | `string` | Source entity |
-| `toEntityId` | `string` | Target entity |
-| `relationshipType` | `string` | e.g. `"co-occurred-in-call"`, `"shared-transaction"`, `"shared-device"` |
-| `confidence` | `number` (0–1) | Edge confidence score |
-| `sourceEventId` | `string` | ID of the originating event |
-| `createdAt` | `number` | Epoch timestamp |
-
-**Indexes**: `by_fromEntityId`, `by_toEntityId` — bidirectional edge lookup.
-
----
-
-### `evidencePackages`
-Court-admissible-style dossiers assembled by the Evidence Packaging Agent. Links sessions and entities to a chronological, source-cited timeline.
-
-| Field | Type | Description |
-|---|---|---|
-| `packageId` | `string` | Unique identifier |
-| `relatedSessionIds` | `array<string>` | Sessions included in this package |
-| `relatedEntityIds` | `array<string>` | Entities included in this package |
-| `timeline` | `array` | Chronological entries `{ timestamp, event, sourceCitation }` |
-| `confidenceScore` | `number` | Weighted average of edge confidences |
-| `status` | `enum` | `"draft"` \| `"finalized"` |
-| `createdAt` | `number` | Epoch timestamp |
-
----
-
-### `complaintLocations`
-Geo-located complaint pins for heatmap overlay. Typed as digital-arrest or counterfeit-seizure to enable geographic convergence visualization.
-
-| Field | Type | Description |
-|---|---|---|
-| `locationId` | `string` | Unique identifier |
-| `lat` | `number` | Latitude |
-| `lng` | `number` | Longitude |
-| `type` | `enum` | `"digital-arrest"` \| `"counterfeit-seizure"` |
-| `severity` | `number` | Severity rating |
-| `relatedSessionId` | `string?` | Optional linked session |
-| `relatedEntityId` | `string?` | Optional linked entity |
-| `reportedAt` | `number` | Epoch timestamp |
-
-**Index**: `by_type` — filter by complaint category for map rendering.
-
-## Event Pipeline
-
-```
-scam/transcript.chunk.received
-  → classifyTranscriptChunk → updates riskScore
-    → (if ≥ 70) scam/session.flagged
-      → orchestrateAlertResponse
-        → buildEvidencePackage + bankAlert + citizenWarning
-
-entity/mention.detected
-  → enrichEntityGraph → upserts entity + creates edges
-    → graph/edge.created
-      → checkConvergence → BFS traversal (depth 3)
-        → (if converged) graph/convergence.detected
-          → orchestrateAlertResponse
-```
+6. **Start the Next.js development server**
+   ```bash
+   npm run dev
+   ```
 
 ## Testing
 
-```bash
-npm test                   # Run all unit tests
-npm run test:watch         # Watch mode
+The project maintains high code quality standards. Run the following commands to verify:
+
+- **Unit Tests:** `npm test`
+- **Linting:** `npm run lint`
+- **Type Checking:** `npx tsc --noEmit`
+
+## Project Structure
+
+```text
+ET_AI/
+├── app/               # Next.js App Router (Pages, API Routes)
+├── components/        # Reusable UI Components
+├── convex/            # Convex Backend Schema, Queries, Mutations
+├── lib/               # Core Utilities, AI Agents, and Testing
+├── middleware.ts      # Clerk Authentication Middleware
+├── package.json       # Dependencies and Scripts
+└── tailwind.config.ts # Tailwind CSS Configuration
 ```
 
-Tests cover:
-- Graph traversal: confidence weights, bidirectional edge creation, BFS convergence (no convergence, weak, strong, cycles)
-- Evidence packaging: citation matching, timeline construction, confidence computation, full package assembly
-# ET_AI
+## Disclaimer
+
+**IMPORTANT:** This is a hackathon prototype built on simulated data. It is NOT connected to any real law enforcement, banking, or telecom system. The AI-generated verdicts and simulated evidence packages are for demonstration purposes only and should not be used in production or relied upon for real-world legal or financial decisions.
+
+## Credits
+
+Built for the ET AI Hackathon 2026 by Tanmay Singh ([@tanmay-7706](https://github.com/tanmay-7706)).

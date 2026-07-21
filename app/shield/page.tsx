@@ -7,11 +7,19 @@ import { ConfidenceRing } from "@/components/ui/ConfidenceRing";
 import { ShieldMessage } from "@/lib/mockShieldResponse";
 
 export default function CitizenShieldPage() {
+  const [language, setLanguage] = useState<"en" | "hi">("en");
+  
+  const getInitMessage = (lang: "en" | "hi") => {
+    return lang === "en" 
+      ? "Hello. I'm your Digital Fraud Shield. Have you received a suspicious call, message, or link? Describe what happened and I'll analyze it for you."
+      : "नमस्ते। मैं आपका डिजिटल धोखाधड़ी रक्षक (Fraud Shield) हूँ। क्या आपको कोई संदिग्ध कॉल, संदेश या लिंक मिला है? मुझे बताएं और मैं इसका विश्लेषण करूंगा।";
+  };
+
   const [messages, setMessages] = useState<ShieldMessage[]>(() => [
     {
       id: "init",
       role: "assistant",
-      text: "Hello. I'm your Digital Fraud Shield. Have you received a suspicious call, message, or link? Describe what happened and I'll analyze it for you.",
+      text: getInitMessage("en"),
       timestamp: Date.now(),
     }
   ]);
@@ -25,6 +33,19 @@ export default function CitizenShieldPage() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
+
+  const handleLanguageToggle = () => {
+    const newLang = language === "en" ? "hi" : "en";
+    setLanguage(newLang);
+    
+    // Update the init message if it's the only one, or just let the chat continue
+    setMessages(prev => {
+      if (prev.length === 1 && prev[0].id === "init") {
+        return [{ ...prev[0], text: getInitMessage(newLang) }];
+      }
+      return prev;
+    });
+  };
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
@@ -58,14 +79,25 @@ export default function CitizenShieldPage() {
         body: JSON.stringify({
           message: userText,
           conversationHistory,
+          language,
         }),
       });
+
+      const data = await res.json();
+      
+      if (res.status === 429) {
+        setMessages((prev) => [...prev, {
+          id: `err_${Date.now()}`,
+          role: "assistant",
+          text: data.message || "Please wait a moment before sending another message.",
+          timestamp: Date.now(),
+        }]);
+        return;
+      }
 
       if (!res.ok) {
         throw new Error(`API error: ${res.status}`);
       }
-
-      const data = await res.json();
       
       // Map API verdict ("likely-safe" | "suspicious" | "likely-scam" | "need-more-information") to RiskLevel
       const mapVerdictToLevel = (v: string): RiskLevel => {
@@ -97,7 +129,9 @@ export default function CitizenShieldPage() {
       setMessages((prev) => [...prev, {
         id: `err_${Date.now()}`,
         role: "assistant",
-        text: "I'm temporarily unable to reach the analysis engine. If this is an emergency or you suspect a scam, please call the National Cyber Crime Helpline at 1930 immediately.",
+        text: language === "en" 
+          ? "I'm temporarily unable to reach the analysis engine. If this is an emergency or you suspect a scam, please call the National Cyber Crime Helpline at 1930 immediately."
+          : "मैं अभी विश्लेषण इंजन तक पहुंचने में असमर्थ हूँ। यदि यह एक आपात स्थिति है या आपको धोखाधड़ी का संदेह है, तो कृपया तुरंत राष्ट्रीय साइबर अपराध हेल्पलाइन 1930 पर कॉल करें।",
         timestamp: Date.now(),
       }]);
     } finally {
@@ -121,14 +155,24 @@ export default function CitizenShieldPage() {
       <GlassPanel className="w-full sm:w-[400px] h-[100dvh] sm:h-[800px] flex flex-col p-0 sm:p-0 overflow-hidden sm:rounded-[2rem] sm:border-2">
         
         {/* Chat Header */}
-        <div className="px-6 py-4 border-b border-white/10 bg-black/20 flex items-center gap-3 relative z-10">
-          <div className="w-10 h-10 rounded-full bg-accent-safe/20 flex items-center justify-center border border-accent-safe/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
-            <svg className="w-5 h-5 text-accent-safe" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+        <div className="px-6 py-4 border-b border-white/10 bg-black/20 flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-accent-safe/20 flex items-center justify-center border border-accent-safe/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+              <svg className="w-5 h-5 text-accent-safe" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            </div>
+            <div>
+              <h1 className="font-bold tracking-tight">Fraud Shield</h1>
+              <p className="text-xs opacity-60 text-accent-safe">Online &bull; AI Agent</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold tracking-tight">Fraud Shield</h1>
-            <p className="text-xs opacity-60 text-accent-safe">Online &bull; AI Agent</p>
-          </div>
+          
+          <button 
+            onClick={handleLanguageToggle}
+            className="flex items-center text-[10px] font-bold bg-white/10 rounded-full overflow-hidden border border-white/20 transition-all hover:bg-white/20"
+          >
+            <span className={`px-2 py-1 ${language === "en" ? "bg-white text-black" : "text-white/60"}`}>EN</span>
+            <span className={`px-2 py-1 ${language === "hi" ? "bg-white text-black" : "text-white/60"}`}>HI</span>
+          </button>
         </div>
 
         {/* Message Area */}
@@ -186,7 +230,7 @@ export default function CitizenShieldPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message Fraud Shield..."
+              placeholder={language === "en" ? "Message Fraud Shield..." : "फ्रॉड शील्ड को संदेश भेजें..."}
               className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-3 text-sm focus:outline-none focus:border-accent-safe/50 focus:bg-white/10 transition"
             />
             <button

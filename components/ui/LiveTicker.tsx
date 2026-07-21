@@ -1,11 +1,16 @@
 "use client";
 import React from "react";
 
+import { Doc } from "@/convex/_generated/dataModel";
+import { Download } from "lucide-react";
+import { generateEvidencePdf } from "@/lib/exportEvidencePdf";
+
 export interface TickerItem {
   id: string;
   timestamp: string;
   message: string;
   type: "alert" | "info" | "success" | "warning";
+  packageData?: Doc<"evidencePackages">;
 }
 
 interface LiveTickerProps {
@@ -35,10 +40,20 @@ export function LiveTicker({ items, className = "" }: LiveTickerProps) {
             }`}
             style={{ animationDelay: `${idx * 100}ms` }}
           >
-            <span className="font-mono text-[10px] opacity-70 whitespace-nowrap mt-1">
-              {item.timestamp}
-            </span>
-            <span className="font-sans text-sm">{item.message}</span>
+            <div className="flex flex-col flex-1">
+              <span className="font-mono text-[10px] opacity-70 whitespace-nowrap mt-1">
+                {item.timestamp}
+              </span>
+              <span className="font-sans text-sm">{item.message}</span>
+            </div>
+            {item.packageData && (
+              <button
+                onClick={() => generateEvidencePdf(item.packageData!)}
+                className="shrink-0 flex items-center gap-1 text-[10px] font-semibold tracking-wide uppercase px-2 py-1 bg-white/10 rounded hover:bg-white/20 transition self-center"
+              >
+                <Download className="w-3 h-3" /> PDF
+              </button>
+            )}
           </div>
         ))}
       </div>

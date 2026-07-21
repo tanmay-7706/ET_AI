@@ -24,6 +24,7 @@ export default function CommandCenterPage() {
         timestamp: new Date(pkg.createdAt).toLocaleTimeString(),
         message: `Evidence package ${pkg.packageId} created. Confidence: ${(pkg.confidenceScore * 100).toFixed(0)}%. ${pkg.status.toUpperCase()}`,
         type: pkg.confidenceScore > 0.8 ? "alert" : pkg.confidenceScore > 0.5 ? "warning" : "info",
+        packageData: pkg,
       }))
     : [];
 

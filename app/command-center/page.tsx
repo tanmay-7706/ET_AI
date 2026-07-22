@@ -30,21 +30,25 @@ export default function CommandCenterPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 sm:p-8 overflow-hidden relative">
-      <DemoControlPanel />
-
       {/* Background glow effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-risk-low/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-risk-critical/10 rounded-full blur-[150px] pointer-events-none" />
 
-      <header className="mb-8 flex justify-between items-end relative z-10 animate-in fade-in slide-in-from-top-4 duration-700">
-        <div>
+      <header className="mb-8 flex flex-wrap items-center gap-4 relative z-10 animate-in fade-in slide-in-from-top-4 duration-700">
+        {/* Left: Title */}
+        <div className="mr-auto">
           <h1 className="text-3xl font-bold tracking-tight mb-1">Command Center</h1>
           <p className="text-sm opacity-60 font-mono">Digital Public Safety Shield // ACTIVE</p>
         </div>
-        <div className="flex items-center gap-4">
+
+        {/* Center: Status Badge */}
+        <div className="flex items-center gap-3">
           <RiskBadge riskLevel="critical" score={92.5} />
-          <span className="font-mono text-xs opacity-50 block">SYSTEM STATUS: ELEVATED</span>
+          <span className="font-mono text-xs opacity-50 hidden sm:block">SYSTEM STATUS: ELEVATED</span>
         </div>
+
+        {/* Right: Demo Controls */}
+        <DemoControlPanel />
       </header>
 
       <div className="relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">

@@ -14,6 +14,7 @@ import type * as alerts from "../alerts.js";
 import type * as clearDemoData from "../clearDemoData.js";
 import type * as dashboardQueries from "../dashboardQueries.js";
 import type * as demo from "../demo.js";
+import type * as demoSequence from "../demoSequence.js";
 import type * as evidence from "../evidence.js";
 import type * as graph from "../graph.js";
 import type * as seed from "../seed.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   clearDemoData: typeof clearDemoData;
   dashboardQueries: typeof dashboardQueries;
   demo: typeof demo;
+  demoSequence: typeof demoSequence;
   evidence: typeof evidence;
   graph: typeof graph;
   seed: typeof seed;

@@ -96,7 +96,7 @@ export const processDemoChunk = mutation({
 
     const now = Date.now();
     const sessionDoc = await ctx.db.query("scamSessions")
-      .withIndex("by_session_id", (q) => q.eq("sessionId", DEMO_SESSION_ID))
+      .filter(q => q.eq(q.field("sessionId"), DEMO_SESSION_ID))
       .first();
 
     if (sessionDoc) {
@@ -111,7 +111,7 @@ export const processDemoChunk = mutation({
       await ctx.db.patch(sessionDoc._id, {
         transcriptChunks: [...(sessionDoc.transcriptChunks || []), newChunk],
         riskScore: chunk.risk,
-        status: newStatus,
+        status: newStatus as any,
         lastReasoning: chunk.reasoning,
         updatedAt: now,
       });
@@ -137,13 +137,12 @@ export const processDemoChunk = mutation({
 
       // Create evidence package
       await ctx.db.insert("evidencePackages", {
-        evidenceId: "ev_convergence_001",
-        sessionId: DEMO_SESSION_ID,
-        title: "Cross-Domain Convergence Detected",
-        type: "financial-link",
-        summary: "Bank account linked to active digital arrest is identical to recipient in counterfeit currency investigation.",
-        confidence: 0.92,
-        extractedData: { bankAccount: "FAKE_BANK_0099887766", linkedCase: "counterfeit-seizure" },
+        packageId: "ev_convergence_001",
+        status: "finalized",
+        relatedSessionIds: [DEMO_SESSION_ID],
+        relatedEntityIds: ["mock_entity_counterfeitNote"],
+        timeline: [{ timestamp: now, event: "Convergence detected", sourceCitation: "Internal system cross-match" }],
+        confidenceScore: 0.92,
         createdAt: now,
       });
     }
@@ -153,10 +152,10 @@ export const processDemoChunk = mutation({
         await ctx.db.insert("alertLog", {
             alertId: "alert_001",
             sessionId: DEMO_SESSION_ID,
-            title: "CRITICAL INCIDENT: Digital Arrest",
+            channel: "bank",
             message: "Active extortion detected with high confidence.",
-            status: "dispatched",
-            createdAt: now
+            status: "sent",
+            dispatchedAt: now
         });
     }
   }

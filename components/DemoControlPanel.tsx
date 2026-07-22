@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { RefreshCw, Play, CheckCircle2 } from "lucide-react";
-import { triggerDemoScenario } from "@/app/actions";
 
 export function DemoControlPanel() {
   const [isResetting, setIsResetting] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const resetDemoData = useMutation(api.seed.seedDemoData);
+  const startDemoSequence = useMutation(api.demoSequence.startDemoSequence);
+  const processDemoChunk = useMutation(api.demoSequence.processDemoChunk);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -20,8 +20,8 @@ export function DemoControlPanel() {
     if (isResetting || isRunning) return;
     setIsResetting(true);
     try {
-      await resetDemoData();
-      showToast("Demo data reset successfully.");
+      await startDemoSequence();
+      showToast("Demo environment initialized & ready.");
     } catch (error) {
       console.error("Failed to reset demo data:", error);
       showToast("Error resetting data.");
@@ -33,12 +33,36 @@ export function DemoControlPanel() {
   const handleRunScenario = async () => {
     if (isResetting || isRunning) return;
     setIsRunning(true);
+    
+    // Total 7 chunks (0 to 6)
+    const totalChunks = 7;
+    let currentChunk = 0;
+
     try {
-      await triggerDemoScenario();
       showToast("Scenario started — watch the session list and network graph!");
-      // Keep the button disabled for ~45s (full scenario duration)
-      // to prevent accidental double-triggers during a live demo
-      setTimeout(() => setIsRunning(false), 45_000);
+      
+      const processNextChunk = async () => {
+        if (currentChunk >= totalChunks) {
+          setIsRunning(false);
+          showToast("Demo scenario completed.");
+          return;
+        }
+
+        try {
+          await processDemoChunk({ stepIndex: currentChunk });
+          currentChunk++;
+          // Wait 3.5 seconds before next chunk
+          setTimeout(processNextChunk, 3500);
+        } catch (error) {
+          console.error("Error processing demo chunk:", error);
+          setIsRunning(false);
+          showToast("Error during scenario playback.");
+        }
+      };
+
+      // Start the loop
+      await processNextChunk();
+
     } catch (error) {
       console.error("Failed to start scenario:", error);
       showToast("Error starting scenario.");

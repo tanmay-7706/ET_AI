@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Shield,
   Radar,
@@ -84,17 +85,13 @@ export default function LandingPage() {
       <nav className="relative z-10 flex items-center justify-between px-6 sm:px-12 py-5">
         <div className="flex items-center gap-3">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden p-1.5 ${
               dark
-                ? "bg-cyan-500/20 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
-                : "bg-[#e0e5ec] shadow-[4px_4px_8px_#babecc,-4px_-4px_8px_#ffffff]"
+                ? "bg-[#060913] border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
+                : "bg-white shadow-[4px_4px_8px_#babecc,-4px_-4px_8px_#ffffff]"
             }`}
           >
-            <Shield
-              className={`w-5 h-5 ${
-                dark ? "text-cyan-400" : "text-[#ff4757]"
-              }`}
-            />
+            <Image src="/logo.png" alt="Digital Public Safety Shield Logo" width={32} height={32} className="object-contain" />
           </div>
           <div>
             <span className="font-bold text-sm tracking-tight">

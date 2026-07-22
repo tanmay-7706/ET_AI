@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { ConfidenceRing } from "@/components/ui/ConfidenceRing";
@@ -36,9 +37,14 @@ export default function CommandCenterPage() {
 
       <header className="mb-8 flex flex-wrap items-center gap-4 relative z-10 animate-in fade-in slide-in-from-top-4 duration-700">
         {/* Left: Title */}
-        <div className="mr-auto">
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Command Center</h1>
-          <p className="text-sm opacity-60 font-mono">Digital Public Safety Shield // ACTIVE</p>
+        <div className="mr-auto flex items-center gap-4">
+          <div className="w-12 h-12 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center p-1 overflow-hidden shrink-0 shadow-lg">
+            <Image src="/logo.png" alt="Logo" width={40} height={40} className="object-contain" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight mb-1">Command Center</h1>
+            <p className="text-sm opacity-60 font-mono">Digital Public Safety Shield // ACTIVE</p>
+          </div>
         </div>
 
         {/* Center: Status Badge */}
